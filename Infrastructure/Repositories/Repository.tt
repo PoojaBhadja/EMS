@@ -1,0 +1,144 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Data" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Data.SqlClient" #>
+<#@ import namespace="System.Data" #>
+using Domain;
+using Models.Entities;
+using Infrastructure.DataAccess;
+using Microsoft.AspNetCore.Http; 
+using System.Security.Claims;
+using Commons.Constants; 
+
+<#= TableClassStatment("Infrastructure.Repositories") #>
+        <#= DBContextStatment("IHttpContextAccessor","_httpContextAccessor") #> 
+        <#= DBContextStatment("ExpenceManagementSystemContext","_repoContext") #> 
+        <#= ConstructorStartStatement("ExpenceManagementSystemContext", "IHttpContextAccessor") #>
+        <#= StartStatement() #>
+            <#= PropertyStatement5("_repoContext = repoContext;") #>
+            <#= PropertyStatement5("_httpContextAccessor = httpContextAccessor;") #> 
+        <#= ConstructorEndStatement() #>
+<#
+	const string sqlConnectionString = @"Server=localhost;Initial Catalog=ExpenceManagementSystem;User id=sa;Password=admin@123;Integrated Security=True;TrustServerCertificate=True;";     
+    SqlConnection connection = new(sqlConnectionString); 
+    connection.Open();
+        try 
+        {
+            var tables = connection.GetSchema("TABLES");
+            var trows = tables.Select(String.Empty, "TABLE_SCHEMA, TABLE_NAME");
+            foreach (var trowIstem in trows)
+            { 
+                string tableName = Convert.ToString(trowIstem["TABLE_NAME"]); 
+                string tableType = Convert.ToString(trowIstem["TABLE_TYPE"]); 
+                if (tableType != "BASE TABLE") continue;
+                if (tableName == "__MigrationHistory" || tableName == "sysdiagrams" || tableName == "AspNetUserRoles") continue; 
+                tableName = string.Concat(tableName[0].ToString().ToUpper(), tableName.Substring(1));
+#> 
+        <#=PropertyStatement(tableName)#>
+        <#=PropertyStatement1(tableName)#>
+        <#=StartStatement()#>
+            <#=GetStatement()#>
+            <#=StartStatement()#>
+                <#=PropertyStatement2(tableName)#>
+                <#=StartStatement()#>
+                    <#=PropertyStatement3(tableName)#>
+                <#=EndStatement()#>
+                <#=PropertyStatement4(tableName)#>
+            <#=EndStatement()#>
+        <#=EndStatement()#>
+<#               
+            }
+        }
+        catch (Exception ex)
+        {
+            connection.Close();
+        }
+        finally
+        {
+            connection.Close();
+        }
+#>
+        <#=StaticStatement()#>
+        <#=StaticStatement1()#>
+            <#=StaticStatement2()#>
+        <#=StaticStatement3()#>
+    <#= ConstructorEndStatement() #>
+<#= ConstructorEndStatement() #>
+<#+
+private string PropertyStatement(string tableName)
+{
+    return string.Format("private I{0}Repository _{0}Repository;", tableName);
+}
+private string PropertyStatement1(string tableName)
+{
+    return string.Format("public I{0}Repository {0}Repository", tableName);
+}
+private string PropertyStatement2(string tableName)
+{
+    return string.Format("if (_{0}Repository == null)", tableName);
+}
+private string PropertyStatement3(string tableName)
+{
+    return string.Format("_{0}Repository = new {0}Repository(_repoContext);", tableName);
+}
+private string PropertyStatement4(string tableName)
+{
+    return string.Format("return _{0}Repository;", tableName);
+}
+private string PropertyStatement5(string name)
+{
+    return string.Format("{0}", name);
+}
+private string GetStatement()
+{
+    return string.Format("get");
+}
+private string TableClassStatment(string namespaceName)
+{
+    return string.Format("namespace " + namespaceName + "\n{{ \n    public class Repository : IRepository\n    {{");
+}
+private string DBContextStatment(string contextName, string contextVariableName)
+{
+    return string.Format("private {0} {1};", contextName, contextVariableName);
+}
+private string TableEndClassStatment()
+{
+    return string.Format("}}\n}}");
+}
+private string StartStatement()
+{
+    return string.Format("{{");
+}
+private string EndStatement()
+{
+    return string.Format("}}");
+}
+private string ConstructorStartStatement(string contextName, string httpContextName)
+{
+    return string.Format("public Repository({0} repoContext, {1} httpContextAccessor)", contextName, httpContextName);
+}
+private string ConstructorEndStatement()
+{
+    return string.Format("}}");
+}
+private string StaticStatement()
+{
+    return string.Format("public Guid GetLoggedInUserId()");
+}
+private string StaticStatement1()
+{
+    return string.Format("{{");
+}
+private string StaticStatement2()
+{
+    return string.Format("return Guid.Parse(_httpContextAccessor.HttpContext?.User.FindFirstValue(JwtCustomClaimNames.UserId));");
+}
+private string StaticStatement3()
+{
+    return string.Format("}}");
+}
+#>

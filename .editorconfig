@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# ASP0003: Do not use model binding attributes with route handlers
+dotnet_diagnostic.ASP0003.severity = warning
